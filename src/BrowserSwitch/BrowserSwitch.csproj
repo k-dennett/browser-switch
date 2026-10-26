@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6C4E966E-9C15-4ED8-BF2B-03770C28CB54}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>BrowserSwitch</RootNamespace>
+    <AssemblyName>BrowserSwitch</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <Optimize>true</Optimize>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\BrowserSwitch.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" /><Reference Include="System.Core" /><Reference Include="System.Xml" />
+    <Reference Include="System.Windows.Forms" /><Reference Include="System.Drawing" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\BrowserSwitch.Core\BrowserDefinition.cs"><Link>Core\BrowserDefinition.cs</Link></Compile>
+    <Compile Include="Program.cs" /><Compile Include="TrayApplicationContext.cs" /><Compile Include="Windows\StartupRegistration.cs" /><Compile Include="SelectorForm.cs" /><Compile Include="BrowserManagerForm.cs" />
+    <Compile Include="Windows\UserInstallation.cs" /><Compile Include="Windows\AppIcon.cs" /><Compile Include="Windows\TrayContextMenu.cs" /><Compile Include="Windows\CommandLine.cs" /><Compile Include="Windows\BrowserLauncher.cs" />
+    <Compile Include="Windows\BrowserDiscovery.cs" /><Compile Include="Windows\SettingsStore.cs" />
+    <Compile Include="Windows\WindowsRegistration.cs" /><Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Assets\BrowserSwitch.ico"><LogicalName>BrowserSwitch.Icon</LogicalName></EmbeddedResource>
+    <None Include="App.config" /><None Include="app.manifest" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

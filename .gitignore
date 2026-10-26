@@ -426,3 +426,18 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# BrowserSwitch: generated binaries and personal/local deployment state
+*.exe
+*.dll
+*.lnk
+*.url
+preferencia.txt
+settings.xml
+settings.xml.*
+*.local.json
+*.local.xml
+*.local.ps1
+*.previous
+# Original local tool retained as a migration backup, never deployed from here.
+/SelectorNavegador/

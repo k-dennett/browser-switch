@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="468" viewBox="0 0 500 468" role="img" aria-labelledby="title desc">
+<title id="title">Esquema del menú de bandeja de BrowserSwitch</title>
+<desc id="desc">Microsoft Edge está seleccionado. El menú también ofrece Comet, Google Chrome, Preguntar siempre, Abrir ventana, Navegadores, Iniciar con Windows y Salir de la bandeja.</desc>
+<defs><filter id="shadow" x="-25%" y="-15%" width="150%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#13274b" flood-opacity="0.14"/></filter></defs>
+<rect width="500" height="468" rx="18" fill="#f3f6fc"/>
+<g transform="translate(100 36)">
+<circle cx="16" cy="16" r="15" fill="#275ac4"/><g fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11H24L20 7M24 11L20 15M25 21H8L12 17M8 21L12 25"/></g>
+<text x="44" y="22" fill="#263651" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="650">Un clic. Otro navegador.</text>
+</g>
+<rect x="88" y="90" width="324" height="324" rx="9" fill="#fff" stroke="#d5dfed" filter="url(#shadow)"/>
+<g font-family="Segoe UI,Arial,sans-serif" font-size="15" fill="#20304a">
+<text x="110" y="119" fill="#587198" font-size="14">BrowserSwitch · Microsoft Edge</text>
+<path d="M100 133H400M100 267H400M100 370H400" stroke="#e1e7f0"/>
+<text x="127" y="160">Comet</text><text x="127" y="190">Google Chrome</text>
+<rect x="97" y="202" width="26" height="25" rx="4" fill="#e3edff"/><path d="M103 215L108 220L117 209" fill="none" stroke="#275ac4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="127" y="220" font-weight="600">Microsoft Edge</text><text x="127" y="250">Preguntar siempre</text>
+<text x="110" y="293">Abrir ventana…</text><text x="110" y="323">Navegadores…</text><text x="110" y="353">Iniciar con Windows</text><text x="110" y="397">Salir de la bandeja</text>
+</g><text x="250" y="444" text-anchor="middle" fill="#66758e" font-family="Segoe UI,Arial,sans-serif" font-size="12">Vista esquemática del menú · inicio automático opcional</text>
+</svg>

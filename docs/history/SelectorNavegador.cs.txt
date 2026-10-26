@@ -1,0 +1,217 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
+using Microsoft.Win32;
+using System.Runtime.InteropServices;
+
+internal sealed class Selector : Form
+{
+    const string AppId = "SelectorNavegadorPersonal";
+    [DllImport("shell32.dll")]
+    static extern void SHChangeNotify(uint eventId, uint flags, IntPtr item1, IntPtr item2);
+    static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "preferencia.txt");
+    static readonly Dictionary<string, string> Browsers = new Dictionary<string, string>();
+    readonly string url;
+    readonly CheckBox remember = new CheckBox();
+    readonly Label status = new Label();
+    readonly TextBox linkInput = new TextBox();
+
+    [STAThread]
+    static void Main(string[] args)
+    {
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+        AddBrowser("Chrome", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Google\Chrome\Application\chrome.exe"));
+        AddBrowser("Chrome", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Google\Chrome\Application\chrome.exe"));
+        AddBrowser("Comet", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Perplexity\Comet\Application\comet.exe"));
+        AddBrowser("Edge", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft\Edge\Application\msedge.exe"));
+        try
+        {
+            if (args.Length == 1 && args[0] == "--register") { Register(); return; }
+            if (args.Length == 0) Register();
+            string link = args.Length > 0 ? args[0] : null;
+            if (link != null)
+            {
+                Uri parsed;
+                if (!Uri.TryCreate(link, UriKind.Absolute, out parsed) || (parsed.Scheme != "http" && parsed.Scheme != "https" && !(parsed.IsFile && (Path.GetExtension(parsed.LocalPath).Equals(".html", StringComparison.OrdinalIgnoreCase) || Path.GetExtension(parsed.LocalPath).Equals(".htm", StringComparison.OrdinalIgnoreCase)))))
+                    throw new ArgumentException("Este selector admite enlaces http/https y archivos HTML.");
+                link = parsed.AbsoluteUri;
+                string preferred = File.Exists(ConfigPath) ? File.ReadAllText(ConfigPath).Trim() : "";
+                if (Browsers.ContainsKey(preferred)) { Open(preferred, link); return; }
+            }
+            Application.Run(new Selector(link));
+        }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Selector de navegador", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+    }
+
+    static void AddBrowser(string name, string path)
+    {
+        if (!Browsers.ContainsKey(name) && File.Exists(path)) Browsers.Add(name, path);
+    }
+
+    static void Open(string name, string link)
+    {
+        // The executable comes from known local paths, never from the URL.
+        Process.Start(new ProcessStartInfo(Browsers[name], "\"" + link.Replace("\"", "%22") + "\"") { UseShellExecute = false });
+    }
+
+    static void Register()
+    {
+        string exe = Application.ExecutablePath;
+        string client = @"Software\Clients\StartMenuInternet\" + AppId;
+        string caps = client + @"\Capabilities";
+        using (RegistryKey key = Registry.CurrentUser.CreateSubKey(client))
+        {
+            key.SetValue("", "Selector de navegador");
+            using (RegistryKey cmd = key.CreateSubKey(@"shell\open\command")) cmd.SetValue("", "\"" + exe + "\"");
+            using (RegistryKey icon = key.CreateSubKey("DefaultIcon")) icon.SetValue("", exe + ",0");
+        }
+        using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\" + AppId))
+        {
+            key.SetValue("", "Selector de navegador");
+            key.SetValue("URL Protocol", "");
+            key.SetValue("FriendlyTypeName", "Enlace web");
+            using (RegistryKey app = key.CreateSubKey("Application"))
+            {
+                app.SetValue("ApplicationName", "Selector de navegador");
+                app.SetValue("ApplicationDescription", "Selector de navegador para enlaces web");
+                app.SetValue("ApplicationIcon", exe + ",0");
+            }
+            using (RegistryKey cmd = key.CreateSubKey(@"shell\open\command")) cmd.SetValue("", "\"" + exe + "\" \"%1\"");
+            using (RegistryKey icon = key.CreateSubKey("DefaultIcon")) icon.SetValue("", exe + ",0");
+        }
+        using (RegistryKey key = Registry.CurrentUser.CreateSubKey(caps))
+        {
+            key.SetValue("ApplicationName", "Selector de navegador");
+            key.SetValue("ApplicationDescription", "Elige Chrome, Comet o Edge al abrir un enlace.");
+            key.SetValue("ApplicationIcon", exe + ",0");
+            using (RegistryKey menu = key.CreateSubKey("StartMenu")) menu.SetValue("StartMenuInternet", AppId);
+            using (RegistryKey files = key.CreateSubKey("FileAssociations"))
+            {
+                files.SetValue(".htm", AppId);
+                files.SetValue(".html", AppId);
+            }
+            using (RegistryKey urls = key.CreateSubKey("URLAssociations"))
+            {
+                urls.SetValue("http", AppId);
+                urls.SetValue("https", AppId);
+            }
+        }
+        using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\RegisteredApplications"))
+        {
+            key.DeleteValue(AppId, false);
+            key.SetValue("Selector de navegador", caps);
+        }
+        SHChangeNotify(0x08000000, 0x1003, IntPtr.Zero, IntPtr.Zero);
+        // Windows' default associations are selected through Settings, never rewritten here.
+    }
+
+    Selector(string link)
+    {
+        url = link;
+        Text = "Selector de navegador";
+        ClientSize = new Size(530, 380);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox = false;
+        StartPosition = FormStartPosition.CenterScreen;
+        Font = new Font("Segoe UI", 10);
+        BackColor = Color.FromArgb(246, 248, 252);
+        AutoScaleMode = AutoScaleMode.Dpi;
+
+        Label title = new Label { Text = link == null ? "¿Dónde abrir tus próximos enlaces?" : "¿Con qué navegador abrir este enlace?", Location = new Point(24, 20), Size = new Size(480, 32), Font = new Font("Segoe UI", 15, FontStyle.Bold) };
+        Controls.Add(title);
+        Label detail = new Label { Text = link == null ? "Pega un enlace para abrirlo, o deja vacío para cambiar de modo:" : link, Location = new Point(24, 62), Size = new Size(480, 45), AutoEllipsis = true };
+        Controls.Add(detail);
+        linkInput.Location = new Point(24, 88);
+        linkInput.Size = new Size(480, 26);
+        linkInput.Visible = link == null;
+        Controls.Add(linkInput);
+        linkInput.BringToFront();
+
+        int x = 24;
+        int index = 1;
+        foreach (KeyValuePair<string, string> entry in Browsers)
+        {
+            string browser = entry.Key;
+            Button button = new Button { Text = "&" + index + "  " + browser, Location = new Point(x, 120), Size = new Size(150, 54), BackColor = Color.White, FlatStyle = FlatStyle.Flat };
+            button.Click += delegate
+            {
+                try
+                {
+                    Choose(browser);
+                }
+                catch (Exception ex) { MessageBox.Show(this, ex.Message, "No se pudo abrir"); }
+            };
+            Controls.Add(button);
+            x += 162;
+            index++;
+        }
+
+        remember.Text = "Usar esta elección para los próximos enlaces";
+        remember.Location = new Point(24, 188);
+        remember.Size = new Size(480, 30);
+        remember.Visible = link != null;
+        Controls.Add(remember);
+
+        Button ask = new Button { Text = "Preguntar siempre", Location = new Point(24, 226), Size = new Size(180, 36) };
+        ask.Click += delegate { try { File.WriteAllText(ConfigPath, ""); UpdateStatus(); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
+        Controls.Add(ask);
+
+        Button defaults = new Button { Text = "Configurar en Windows", Location = new Point(218, 226), Size = new Size(220, 36) };
+        defaults.Click += delegate { try { Register(); Process.Start(new ProcessStartInfo("ms-settings:defaultapps?registeredAppUser=Selector%20de%20navegador") { UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
+        Controls.Add(defaults);
+
+        status.Location = new Point(24, 285);
+        status.Size = new Size(480, 70);
+        Controls.Add(status);
+        UpdateStatus();
+        KeyPreview = true;
+        KeyDown += delegate(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape) Close();
+            int n = !linkInput.ContainsFocus && e.KeyCode >= Keys.D1 && e.KeyCode <= Keys.D3 ? e.KeyCode - Keys.D1 : -1;
+            if (n >= 0 && n < Browsers.Count)
+            {
+                string name = new List<string>(Browsers.Keys)[n];
+                try
+                {
+                    Choose(name);
+                }
+                catch (Exception ex) { MessageBox.Show(this, ex.Message); }
+            }
+        };
+    }
+
+    void Choose(string browser)
+    {
+        string target = url ?? linkInput.Text.Trim();
+        if (target.Length == 0)
+        {
+            File.WriteAllText(ConfigPath, browser);
+            UpdateStatus();
+            return;
+        }
+        if (url == null)
+        {
+            Uri parsed;
+            if (!Uri.TryCreate(target, UriKind.Absolute, out parsed) || (parsed.Scheme != "http" && parsed.Scheme != "https"))
+                throw new ArgumentException("Pega un enlace completo que comience con https:// o http://.");
+            target = parsed.AbsoluteUri;
+        }
+        if (remember.Checked) File.WriteAllText(ConfigPath, browser);
+        Open(browser, target);
+        Close();
+    }
+
+    void UpdateStatus()
+    {
+        string selected = File.Exists(ConfigPath) ? File.ReadAllText(ConfigPath).Trim() : "";
+        bool active = false;
+        using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice"))
+            active = key != null && string.Equals(key.GetValue("ProgId") as string, AppId, StringComparison.OrdinalIgnoreCase);
+        status.Text = "Modo guardado: " + (Browsers.ContainsKey(selected) ? selected : "preguntar en cada enlace") + ".\n" + (active ? "Activo para enlaces HTTPS de Windows." : "Activación en Windows pendiente. Puedes abrir enlaces pegándolos arriba.");
+    }
+}

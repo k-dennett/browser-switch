@@ -1,0 +1,15 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.168
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrowserSwitch", "src\BrowserSwitch\BrowserSwitch.csproj", "{6C4E966E-9C15-4ED8-BF2B-03770C28CB54}"
+EndProject
+Global
+    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+        Release|Any CPU = Release|Any CPU
+    EndGlobalSection
+    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+        {6C4E966E-9C15-4ED8-BF2B-03770C28CB54}.Release|Any CPU.ActiveCfg = Release|AnyCPU
+        {6C4E966E-9C15-4ED8-BF2B-03770C28CB54}.Release|Any CPU.Build.0 = Release|AnyCPU
+    EndGlobalSection
+EndGlobal
