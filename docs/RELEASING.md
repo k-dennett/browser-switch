@@ -25,6 +25,10 @@ El ZIP solo contiene una lista explícita de archivos del programa, instruccione
 
 Antes de darlo por válido, se extrae en una carpeta nueva con espacios, se comparan todos los archivos y hashes, se revisa FileVersion y se ejecuta `--diagnostics` desde el binario extraído. El manifiesto interno identifica el commit y los hashes de los archivos. Los directorios de preparación y prueba se conservan bajo artifacts para inspección, fuera de Git.
 
+## Paquetes de GitHub Actions
+
+El [workflow Windows CI](CI.md) ejecuta este mismo empaquetador en cada cambio de main, pull request o ejecución manual. Conserva ZIP y SHA-256 como artefactos durante 14 días. El commit queda identificado en el paquete y en el resumen del trabajo. Los artefactos de CI no publican ni reemplazan releases; la publicación siguiente sigue siendo manual y comprueba el commit preparado.
+
 ## Publicar
 
 La cuenta debe tener permiso de escritura en el repositorio y Git debe estar autenticado con su gestor de credenciales habitual.

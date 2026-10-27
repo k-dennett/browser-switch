@@ -1,0 +1,60 @@
+name: Windows CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-package:
+    name: Build, test and package
+    runs-on: windows-2022
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Package.ps1 builds, runs Test.ps1 and validates the extracted ZIP.
+      - name: Build, test and verify Windows ZIP
+        run: ./scripts/Package.ps1
+
+      - name: Summarize verified package
+        run: |
+          $receipt = Get-Content ./artifacts/releases/package-validation.json -Raw | ConvertFrom-Json
+          @"
+          ## BrowserSwitch for Windows
+
+          - Version: $($receipt.version)
+          - Commit: $($receipt.commit)
+          - Package: $($receipt.zip)
+          - Size: $($receipt.size) bytes
+          - SHA-256: $($receipt.sha256)
+
+          Build, automated tests, ZIP extraction, file hashes and extracted executable diagnostics passed.
+          Download the ZIP and SHA256SUMS.txt from this run's Artifacts section.
+          Release publication remains manual. Interactive installation on another Windows PC is a separate check.
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Upload verified ZIP and checksum
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: BrowserSwitch-windows-${{ github.run_number }}
+          path: |
+            artifacts/releases/BrowserSwitch-*-windows.zip
+            artifacts/releases/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

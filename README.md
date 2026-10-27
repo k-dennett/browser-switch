@@ -154,4 +154,6 @@ La lógica compartible está separada de WinForms y del registro. BrowserSwitch 
 
 El mismo diseño se utiliza en el ejecutable, la bandeja y los accesos directos. Para regenerar los recursos, ejecuta `scripts/Generate-Icon.ps1`.
 
+Cada cambio en main y cada pull request se compila y prueba en Windows mediante [GitHub Actions](https://github.com/k-dennett/browser-switch/actions/workflows/windows.yml). Las ejecuciones correctas guardan el ZIP y SHA-256 durante 14 días. [Cómo descargar y entender las comprobaciones](docs/CI.md).
+
 Para reproducir y publicar paquetes, consulta la [guía de releases](docs/RELEASING.md).
