@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 function Get-BrowserSwitchFramework {
     if ($env:OS -ne 'Windows_NT') { throw 'Ejecuta este script con PowerShell de Windows, incluso si el código está en WSL.' }
@@ -30,7 +30,8 @@ function Invoke-BrowserSwitchCommand {
     $process = [Diagnostics.Process]::Start($start)
     try {
         $errorText = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit(20000)) { $process.Kill(); throw 'BrowserSwitch no terminó la comprobación en 20 segundos.' }
+        $timeout = if ($Arguments -contains '--install') { 90000 } else { 20000 }
+        if (-not $process.WaitForExit($timeout)) { $process.Kill(); throw ('BrowserSwitch no terminó la operación en ' + ($timeout / 1000) + ' segundos.') }
         if ($process.ExitCode -ne 0) { throw ('BrowserSwitch devolvió un error: ' + $errorText.Result) }
     } finally { $process.Dispose() }
 }

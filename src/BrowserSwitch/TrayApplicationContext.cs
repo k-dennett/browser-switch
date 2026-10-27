@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Threading;
 using System.Windows.Forms;
 using BrowserSwitch.Core;
@@ -20,28 +19,35 @@ namespace BrowserSwitch
         readonly Control dispatcher;
         readonly RegisteredWaitHandle activationWait;
         readonly RegisteredWaitHandle windowWait;
+        readonly RegisteredWaitHandle shutdownWait;
         SelectorForm selector;
         volatile bool disposing;
 
         [DllImport("user32.dll")]
         static extern bool SetForegroundWindow(IntPtr handle);
 
-        public static void Run(bool showMenu, bool showWindow)
+        public static void Run(bool showMenu, bool showWindow) { Run(showMenu, showWindow, ResidentSession.Current); }
+        internal static void Run(bool showMenu, bool showWindow, ResidentSession session)
         {
-            string identity = WindowsIdentity.GetCurrent().User.Value;
-            // One resident per user/session. Links still use short-lived independent processes.
-            using (EventWaitHandle activation = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\BrowserSwitch.ShowMenu." + identity))
-            using (EventWaitHandle windowActivation = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\BrowserSwitch.ShowWindow." + identity))
+            using (EventWaitHandle activation = new EventWaitHandle(false, EventResetMode.AutoReset, session.Name("ShowMenu")))
+            using (EventWaitHandle windowActivation = new EventWaitHandle(false, EventResetMode.AutoReset, session.Name("ShowWindow")))
+            using (EventWaitHandle shutdown = new EventWaitHandle(false, EventResetMode.AutoReset, session.Name("Stop")))
+            using (EventWaitHandle ready = new EventWaitHandle(false, EventResetMode.ManualReset, session.Name("Ready")))
             {
                 bool first;
-                using (Mutex instance = new Mutex(false, @"Local\BrowserSwitch.Tray." + identity, out first))
+                using (Mutex instance = new Mutex(false, session.Name("Tray"), out first))
                 {
                     if (!first) { if (showWindow) windowActivation.Set(); else if (showMenu) activation.Set(); return; }
-                    using (TrayApplicationContext context = new TrayApplicationContext(activation, windowActivation, showMenu, showWindow)) Application.Run(context);
+                    using (TrayApplicationContext context = new TrayApplicationContext(activation, windowActivation, shutdown, showMenu, showWindow))
+                    {
+                        ready.Set();
+                        try { Application.Run(context); }
+                        finally { ready.Reset(); }
+                    }
                 }
             }
         }
-        TrayApplicationContext(EventWaitHandle activation, EventWaitHandle windowActivation, bool showMenu, bool showWindow)
+        TrayApplicationContext(EventWaitHandle activation, EventWaitHandle windowActivation, EventWaitHandle shutdown, bool showMenu, bool showWindow)
         {
             dispatcher = new Control();
             // A message-only dispatcher: no visible window, timer or polling loop.
@@ -52,21 +58,24 @@ namespace BrowserSwitch
             icon = AppIcon.Create();
             notification = new NotifyIcon { Icon = icon, ContextMenuStrip = menu, Text = "BrowserSwitch", Visible = true };
             notification.MouseUp += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) ShowMenu(); };
-            activationWait = ThreadPool.RegisterWaitForSingleObject(activation, delegate
-            {
-                if (disposing) return;
-                try { dispatcher.BeginInvoke(new Action(ShowMenu)); }
-                catch (InvalidOperationException) { }
-            }, null, Timeout.Infinite, false);
-            windowWait = ThreadPool.RegisterWaitForSingleObject(windowActivation, delegate
-            {
-                if (disposing) return;
-                try { dispatcher.BeginInvoke(new Action(delegate { Try(ShowSelector); })); }
-                catch (InvalidOperationException) { }
-            }, null, Timeout.Infinite, false);
+            activationWait = Watch(activation, ShowMenu);
+            windowWait = Watch(windowActivation, delegate { Try(ShowSelector); });
+            shutdownWait = Watch(shutdown, delegate {
+                // Do not discard a browser editor's uncommitted changes.
+                foreach (Form form in Application.OpenForms) if (form.Modal) return;
+                ExitThread();
+            });
             UpdateTooltip();
             if (showWindow) dispatcher.BeginInvoke(new Action(delegate { Try(ShowSelector); }));
             else if (showMenu) dispatcher.BeginInvoke(new Action(ShowMenu));
+        }
+        RegisteredWaitHandle Watch(EventWaitHandle signal, Action action)
+        {
+            return ThreadPool.RegisterWaitForSingleObject(signal, delegate {
+                if (disposing) return;
+                try { dispatcher.BeginInvoke(action); }
+                catch (InvalidOperationException) { }
+            }, null, Timeout.Infinite, false);
         }
         void Try(Action action)
         {
@@ -163,6 +172,7 @@ namespace BrowserSwitch
                 disposing = true;
                 activationWait.Unregister(null);
                 windowWait.Unregister(null);
+                shutdownWait.Unregister(null);
                 notification.Visible = false;
                 notification.Dispose(); menu.Dispose(); icon.Dispose(); dispatcher.Dispose();
             }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -39,19 +39,31 @@ namespace BrowserSwitch.Windows
         {
             get { return Assembly.GetExecutingAssembly().Location.Equals(Path.Combine(SettingsStore.InstallDirectory, "BrowserSwitch.exe"), StringComparison.OrdinalIgnoreCase); }
         }
+        public static bool HasInstalledCopy { get { return File.Exists(Path.Combine(SettingsStore.InstallDirectory, "BrowserSwitch.exe")); } }
         public static void Install()
         {
             RequireUnpackaged();
+            ResidentSession session = ResidentSession.Current;
+            using (System.Threading.Mutex update = new System.Threading.Mutex(false, session.Name("Install")))
+            {
+                bool held = false;
+                try {
+                    try { held = update.WaitOne(0); }
+                    catch (System.Threading.AbandonedMutexException) { held = true; }
+                    if (!held) throw new IOException("Ya se está instalando BrowserSwitch. Espera a que termine.");
+                    InstallCore(session);
+                }
+                finally { if (held) update.ReleaseMutex(); }
+            }
+        }
+        static void InstallCore(ResidentSession session)
+        {
             string install = SettingsStore.InstallDirectory;
             if (install.StartsWith(@"\\", StringComparison.Ordinal) || !Path.IsPathRooted(install)) throw new InvalidOperationException("LOCALAPPDATA debe estar en una unidad local de Windows.");
             string source = Assembly.GetExecutingAssembly().Location;
             string exe = Path.Combine(install, "BrowserSwitch.exe");
             string repo = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(source)));
             if (repo == null || !File.Exists(Path.Combine(repo, @"src\BrowserSwitch\BrowserSwitch.csproj"))) repo = null;
-            foreach (Process process in Process.GetProcessesByName("BrowserSwitch"))
-                using (process)
-                    if (process.Id != Process.GetCurrentProcess().Id && string.Equals(process.MainModule.FileName, exe, StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidOperationException("Cierra las otras ventanas de BrowserSwitch antes de actualizar.");
             Directory.CreateDirectory(install);
             string data = Path.Combine(install, "Data");
             string migration = Path.Combine(data, "Migration");
@@ -74,30 +86,71 @@ namespace BrowserSwitch.Windows
                             snapshot.Values.Add(new RegistrationValue { Key = @"Software\RegisteredApplications", Name = name, Value = key.GetValue(name) as string, Kind = "String" });
                 using (StreamWriter writer = new StreamWriter(snapshotPath)) new XmlSerializer(typeof(RegistrationSnapshot)).Serialize(writer, snapshot);
             }
-            if (!source.Equals(exe, StringComparison.OrdinalIgnoreCase))
+            string work = Path.Combine(data, "Updates", Guid.NewGuid().ToString("N"));
+            using (InstallationFiles files = new InstallationFiles(work))
             {
-                string staged = Path.Combine(install, "BrowserSwitch.new.exe");
-                File.Copy(source, staged, true);
-                File.Copy(source + ".config", staged + ".config", true);
-                Run(staged, "--diagnostics", Path.Combine(data, "staging-check.xml"));
-                if (File.Exists(exe + ".config")) File.Copy(exe + ".config", exe + ".config.previous", true);
-                if (File.Exists(exe)) File.Replace(staged, exe, exe + ".previous");
-                else File.Move(staged, exe);
-                File.Copy(staged + ".config", exe + ".config", true);
-                File.Delete(staged + ".config");
+                string staged = Path.Combine(work, "BrowserSwitch.exe");
+                File.Copy(source, staged);
+                File.Copy(source + ".config", staged + ".config");
+                // Reject a broken download before touching the running installation.
+                Run(staged, "--diagnostics", Path.Combine(work, "staging-check.xml"));
+                RegistrationBackup registration = new RegistrationBackup(WindowsRegistration.AppId, WindowsRegistration.ProductName);
+                bool changed = false, wasRunning = false, started = false;
+                try
+                {
+                    wasRunning = session.Stop(exe);
+                    changed = true;
+                    if (!source.Equals(exe, StringComparison.OrdinalIgnoreCase))
+                    {
+                        files.Protect(exe, true); files.Protect(exe + ".config", true);
+                        files.Replace(staged, exe);
+                        files.Replace(staged + ".config", exe + ".config");
+                    }
+                    // The exact stable executable must pass before registration changes.
+                    Run(exe, "--diagnostics", Path.Combine(data, "install-check.xml"));
+                    if (!File.Exists(SettingsStore.DefaultPath))
+                    {
+                        List<string> old = CommandLine.Split(snapshot.Command);
+                        string preference = old.Count > 0 ? Path.Combine(Path.GetDirectoryName(old[0]), "preferencia.txt") : null;
+                        if ((preference == null || !File.Exists(preference)) && repo != null) preference = Path.Combine(repo, @"SelectorNavegador\preferencia.txt");
+                        if (preference != null && File.Exists(preference)) Run(exe, "--migrate-preference", preference);
+                    }
+                    string iconPath = Path.Combine(install, "BrowserSwitch.ico");
+                    files.Protect(iconPath, false); AppIcon.Save(iconPath);
+                    Run(exe, "--register");
+                    CreateShortcuts(exe, install, repo, migration, iconPath, files);
+                    Run(exe, "--diagnostics", Path.Combine(data, "install-check.xml"));
+                    session.Start(exe, "--tray");
+                    started = true;
+                    files.Commit();
+                }
+                catch (Exception failure)
+                {
+                    if (!changed) throw;
+                    List<Exception> recovery = new List<Exception>();
+                    if (started) try { session.Stop(exe); } catch (Exception ex) { recovery.Add(ex); }
+                    try { files.Rollback(); } catch (Exception ex) { recovery.Add(ex); }
+                    try { registration.Restore(); } catch (Exception ex) { recovery.Add(ex); }
+                    if (recovery.Count == 0 && wasRunning)
+                        try { RestartPrevious(session, exe); } catch (Exception ex) { recovery.Add(ex); }
+                    if (recovery.Count > 0)
+                    {
+                        recovery.Insert(0, failure);
+                        throw new IOException("La actualización falló y la recuperación necesita revisión. Copias conservadas en: " + work, new AggregateException(recovery));
+                    }
+                    files.CompleteRecovery();
+                    throw new IOException("No se pudo completar la actualización. Se recuperaron los archivos y el registro anteriores. " + failure.Message, failure);
+                }
             }
-            // This exact executable must start successfully before registry or shortcut changes.
-            Run(exe, "--diagnostics", Path.Combine(data, "install-check.xml"));
-            if (!File.Exists(SettingsStore.DefaultPath))
-            {
-                List<string> old = CommandLine.Split(snapshot.Command);
-                string preference = old.Count > 0 ? Path.Combine(Path.GetDirectoryName(old[0]), "preferencia.txt") : null;
-                if ((preference == null || !File.Exists(preference)) && repo != null) preference = Path.Combine(repo, @"SelectorNavegador\preferencia.txt");
-                if (preference != null && File.Exists(preference)) Run(exe, "--migrate-preference", preference);
-            }
-            string iconPath = Path.Combine(install, "BrowserSwitch.ico");
-            AppIcon.Save(iconPath);
-            Run(exe, "--register");
+        }
+        static void RestartPrevious(ResidentSession session, string exe)
+        {
+            if (new Version(FileVersionInfo.GetVersionInfo(exe).FileVersion) >= new Version(1, 1, 0, 0)) session.Start(exe, "--tray");
+            else using (Process process = Process.Start(new ProcessStartInfo(exe, "--tray") { UseShellExecute = false, CreateNoWindow = true }))
+                if (process.WaitForExit(1000)) throw new IOException("Se recuperó la versión anterior, pero no se pudo reiniciar su bandeja.");
+        }
+        static void CreateShortcuts(string exe, string install, string repo, string migration, string iconPath, InstallationFiles files)
+        {
             string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             string programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
             List<string> shortcuts = new List<string> { Path.Combine(desktop, "BrowserSwitch.lnk"), Path.Combine(programs, "BrowserSwitch.lnk") };
@@ -126,6 +179,7 @@ namespace BrowserSwitch.Windows
                     }
                 foreach (string path in shortcuts)
                 {
+                    files.Protect(path, false);
                     object shortcut = shellType.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { path });
                     try
                     {
@@ -139,7 +193,6 @@ namespace BrowserSwitch.Windows
                 }
             }
             finally { Marshal.FinalReleaseComObject(shell); }
-            Run(exe, "--diagnostics", Path.Combine(data, "install-check.xml"));
         }
         static void SetShortcut(object shortcut, string property, string value)
         {

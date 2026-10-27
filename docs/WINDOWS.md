@@ -8,9 +8,9 @@ Es independiente de Browser Picker. Su código público se consultó como refere
 
 ## Instalar desde la release descargable
 
-Descarga el ZIP compilado desde [Releases](https://github.com/k-dennett/browser-switch/releases/latest), extrae todo y abre BrowserSwitch.exe. Pulsa **Instalar BrowserSwitch**, selecciona HTTP y HTTPS en Aplicaciones predeterminadas y abre después el acceso directo del escritorio o Inicio. No necesitas el repositorio, Git ni PowerShell para esta instalación gráfica.
+Descarga el ZIP compilado desde [Releases](https://github.com/k-dennett/browser-switch/releases/latest), extrae todo y abre BrowserSwitch.exe. Pulsa **Instalar BrowserSwitch** o **Actualizar BrowserSwitch**: la copia instalada arranca en la bandeja y la ventana del paquete se cierra sola. Si HTTP/HTTPS aún no están asignados, completa la selección en Aplicaciones predeterminadas. No necesitas el repositorio, Git ni PowerShell para esta instalación gráfica.
 
-Para actualizar, primero usa **Salir de la bandeja**. La carpeta extraída contiene instrucciones y scripts opcionales de desinstalación. No ejecutes el programa directamente desde dentro del ZIP. El binario no está firmado digitalmente y no se modifican restricciones de la organización.
+No hace falta salir manualmente de la bandeja para actualizar. Guarda o cancela cualquier editor de navegadores abierto antes de continuar. La carpeta extraída contiene instrucciones y scripts opcionales de desinstalación. No ejecutes el programa directamente desde dentro del ZIP. El binario no está firmado digitalmente y no se modifican restricciones de la organización.
 
 ## Requisitos
 
@@ -76,7 +76,7 @@ powershell.exe -NoProfile -File "$(wslpath -w "$PWD/scripts/Build.ps1")"
 
 En el equipo donde se validó esta migración, AppLocker bloquea `powershell.exe`: esa invocación no se pudo usar. La compilación se realizó con el PowerShell y el compilador ya disponibles en el entorno de trabajo. No se desactivó AppLocker ni se cambiaron políticas.
 
-**Instalar sin una consola:** una vez compilado, abre `artifacts\windows\BrowserSwitch.exe` desde el Explorador y pulsa **Instalar BrowserSwitch**. Esto prepara la copia local y abre Aplicaciones predeterminadas. La opción `--install` realiza la misma preparación y permite automatizarla desde un proceso Windows normal permitido. Ninguna de estas opciones necesita ejecutar PowerShell.
+**Instalar sin una consola:** una vez compilado, abre `artifacts\windows\BrowserSwitch.exe` desde el Explorador y pulsa **Instalar BrowserSwitch**. Esto prepara la copia local, arranca su bandeja y cierra la ventana del paquete. Abre Aplicaciones predeterminadas si todavía falta HTTP/HTTPS. La opción `--install` realiza la misma preparación y arranque automático y permite automatizarla desde un proceso Windows normal permitido. Ninguna de estas opciones necesita ejecutar PowerShell.
 
 La preparación:
 
@@ -143,9 +143,15 @@ Teams puede abrir enlaces directamente en Edge por una preferencia propia. En su
 
 ## Actualizar
 
-Usa **Salir de la bandeja**, cierra los selectores pendientes, actualiza el código y repite `Install.ps1` desde una consola normal permitida. Alternativamente compila y abre el ejecutable del repositorio desde el Explorador para pulsar **Instalar BrowserSwitch**. El destino local y el ProgID permanecen constantes, y las preferencias no se sustituyen. Comprueba un enlace externo después de actualizar.
+Extrae el ZIP nuevo, abre BrowserSwitch.exe y pulsa **Actualizar BrowserSwitch**. El instalador comprueba primero el binario extraído, solicita el cierre del residente, actualiza los archivos y espera la confirmación de arranque de la bandeja nueva. La ventana del paquete se cierra automáticamente: no tienes que abrir después el acceso directo. También puedes repetir Install.ps1 desde una consola normal permitida.
 
-Las copias `.previous` del ejecutable y de su `.config` permiten recuperar la versión previa después de cerrar la aplicación. `Data\Migration\registration-before.xml` conserva únicamente valores de registro propios previos a la instalación para diagnóstico o recuperación manual; no restaura asociaciones protegidas. No importes un destino antiguo si su ejecutable ya no existe.
+Se conservan el destino local, el ProgID, las preferencias y la opción de inicio con Windows. Las asociaciones ya activas permanecen; si falta HTTP o HTTPS, la interfaz abre Configuración para que hagas la elección normal. Comprueba un enlace externo después de actualizar.
+
+Un editor modal abierto impide el cierre coordinado para no descartar el borrador: guarda o cancela y vuelve a pulsar Actualizar. La compatibilidad con v1.0 solo termina su residente antiguo si no tiene ventanas visibles. Otros selectores de enlaces pendientes deben cerrarse antes de sustituir sus archivos.
+
+La actualización conserva ejecutable y configuración previos como `.previous`. Si falla una fase posterior al cambio, intenta restaurar archivos, icono, accesos directos y registro propio, y reiniciar la versión anterior si estaba funcionando. Si algún archivo permanece bloqueado o no se puede completar la recuperación, conserva las copias en `Data\Updates` y muestra la ubicación en el error. Las preferencias no se sustituyen y no se escribe UserChoice.
+
+`Data\Migration\registration-before.xml` conserva la instantánea original para diagnóstico; no restaura asociaciones protegidas. Los respaldos de cada intento se eliminan después del éxito o de una recuperación completa; se conservan si necesitan revisión.
 
 ## Desinstalar
 

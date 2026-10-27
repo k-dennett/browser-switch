@@ -4,11 +4,11 @@
 <h1 align="center">BrowserSwitch</h1>
 <p align="center"><strong>Tus enlaces, tu navegador.</strong><br>Elige dónde abrir cada enlace o cambia de navegador desde la bandeja de Windows.</p>
 <p align="center">
-  <a href="https://github.com/k-dennett/browser-switch/releases/latest"><img src="docs/assets/badge-release.svg" alt="Descargar BrowserSwitch v1.0.0 para Windows"></a>
+  <a href="https://github.com/k-dennett/browser-switch/releases/latest"><img src="docs/assets/badge-release.svg" alt="Descargar BrowserSwitch v1.1.0 para Windows"></a>
   <img src="docs/assets/badge-windows.svg" alt="Windows 10 y 11">
   <img src="docs/assets/badge-dotnet.svg" alt=".NET Framework 4.8">
   <img src="docs/assets/badge-user.svg" alt="Instalación sin administrador">
-  <a href="docs/VALIDATION.md"><img src="docs/assets/badge-tests.svg" alt="299 comprobaciones locales aprobadas"></a>
+  <a href="docs/VALIDATION.md"><img src="docs/assets/badge-tests.svg" alt="327 comprobaciones locales aprobadas"></a>
 </p>
 <p align="center">
   <a href="#-empezar">Empezar</a> · <a href="#-cómo-se-usa">Uso</a> · <a href="docs/WINDOWS.md">Guía de Windows</a> · <a href="docs/VALIDATION.md">Validación</a> · <a href="src/BrowserSwitch/Assets/BrowserSwitch.ico">Icono ICO</a>
@@ -45,23 +45,25 @@ La lista se adapta a los navegadores detectados en tu equipo. Puedes agregar otr
 
 ## 🚀 Empezar
 
-**[⬇ Descargar BrowserSwitch para Windows](https://github.com/k-dennett/browser-switch/releases/latest)** · [Notas de v1.0.0](docs/releases/v1.0.0.md)
+**[⬇ Descargar BrowserSwitch para Windows](https://github.com/k-dennett/browser-switch/releases/latest)** · [Notas de v1.1.0](docs/releases/v1.1.0.md)
 
 **Requisitos:** Windows 10/11 con **.NET Framework 4.8** disponible. La instalación gráfica del ZIP no necesita Git, el repositorio ni PowerShell. El repositorio es privado: debes tener acceso para descargar la release.
 
 ### 1 · Descargar y extraer
 
-En **Assets** de la release elige **BrowserSwitch-1.0.0-windows.zip** y extrae **todo** su contenido. Los archivos llamados *Source code* contienen el código, no el paquete compilado.
+En **Assets** de la release elige **BrowserSwitch-1.1.0-windows.zip** y extrae **todo** su contenido. Los archivos llamados *Source code* contienen el código, no el paquete compilado.
 
 ### 2 · Instalar para tu usuario
 
-Abre `BrowserSwitch.exe` desde la carpeta extraída y pulsa **Instalar BrowserSwitch**. La aplicación prepara la copia local y abre Aplicaciones predeterminadas. Si estás actualizando, primero usa **Salir de la bandeja** y cierra los selectores pendientes.
+Abre `BrowserSwitch.exe` desde la carpeta extraída y pulsa **Instalar BrowserSwitch** o **Actualizar BrowserSwitch**. La aplicación comprueba el paquete, cierra el residente anterior, prepara la copia local y arranca automáticamente la bandeja. Al terminar se cierra la ventana del paquete. Si HTTP/HTTPS aún no están asignados, abre Aplicaciones predeterminadas.
 
 En **Configuración → Aplicaciones → Aplicaciones predeterminadas → BrowserSwitch**, asigna **HTTP** y **HTTPS**. Puedes asignar también `.htm` y `.html`.
 
-### 3 · Usar el acceso directo
+### 3 · Cambiar desde la bandeja
 
-Abre **BrowserSwitch** desde el escritorio o el menú Inicio. El icono azul queda disponible en la bandeja para cambiar rápidamente. Puedes cerrar la ventana que abriste desde la carpeta extraída.
+El icono azul queda disponible en la bandeja para cambiar rápidamente. Los accesos directos del escritorio y del menú Inicio permiten volver a abrir el menú cuando quieras. No necesitas abrirlos para completar la instalación.
+
+Si tienes un editor de navegadores abierto, guarda o cancela ese borrador y vuelve a actualizar. Ante un fallo durante la instalación se intenta recuperar la versión anterior; si la recuperación no se puede completar, se conservan copias y se indica su ubicación.
 
 BrowserSwitch conserva el identificador técnico `SelectorNavegadorPersonal` para mantener asociaciones existentes. La selección se hace con la interfaz normal de Windows; el programa no fuerza `UserChoice` ni sus hashes.
 
@@ -127,7 +129,7 @@ El código y la copia instalada están separados. Los binarios generados, acceso
 
 | Actualizar | Desinstalar |
 | --- | --- |
-| Usa **Salir de la bandeja**, extrae el ZIP nuevo e instala desde él. Se conservan tus preferencias y el destino local. | Primero elige otro navegador en Windows; después ejecuta `Uninstall.ps1`. Los datos personales se conservan por defecto. |
+| Extrae el ZIP nuevo, abre BrowserSwitch.exe y pulsa **Actualizar BrowserSwitch**. Se conserva tu configuración y la bandeja vuelve a arrancar sola. | Primero elige otro navegador en Windows; después ejecuta `Uninstall.ps1`. Los datos personales se conservan por defecto. |
 | [Actualización y recuperación](docs/WINDOWS.md#actualizar) | [Desinstalación y limpieza opcional](docs/WINDOWS.md#desinstalar) |
 
 ## 🧩 Proyecto y plataformas

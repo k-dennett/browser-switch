@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -59,8 +59,25 @@ namespace BrowserSwitch
             Button ask = new Button { Text = "Preguntar siempre", Location = new Point(24, 412), Size = new Size(182, 38) };
             ask.Click += delegate { Try(delegate { settings.PreferredBrowserId = ""; store.Save(settings); UpdateStatus(); }); };
             Controls.Add(ask);
-            Button defaults = new Button { Text = UserInstallation.IsStable ? "Configurar en Windows" : "Instalar BrowserSwitch", Location = new Point(216, 412), Size = new Size(218, 38) };
-            defaults.Click += delegate { Try(delegate { if (UserInstallation.IsStable) WindowsRegistration.Register(); else UserInstallation.Install(); WindowsRegistration.OpenDefaults(); }); };
+            Button defaults = new Button { Text = UserInstallation.IsStable ? "Configurar en Windows" : (UserInstallation.HasInstalledCopy ? "Actualizar BrowserSwitch" : "Instalar BrowserSwitch"), Location = new Point(216, 412), Size = new Size(218, 38) };
+            defaults.Click += delegate
+            {
+                if (UserInstallation.IsStable) { Try(delegate { WindowsRegistration.Register(); WindowsRegistration.OpenDefaults(); }); return; }
+                defaults.Enabled = false; UseWaitCursor = true;
+                string label = defaults.Text; defaults.Text = "Preparando…"; defaults.Refresh();
+                bool installed = false;
+                try { UserInstallation.Install(); installed = true; }
+                catch (Exception ex) { MessageBox.Show(this, ex.Message, "BrowserSwitch", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+                finally { UseWaitCursor = false; defaults.Enabled = true; defaults.Text = label; }
+                if (installed)
+                {
+                    // The stable tray is already running. The downloaded window is no longer needed.
+                    Close();
+                    if (!WindowsRegistration.IsDefault("http") || !WindowsRegistration.IsDefault("https"))
+                        try { WindowsRegistration.OpenDefaults(); }
+                        catch (Exception ex) { MessageBox.Show("BrowserSwitch está instalado. Abre Aplicaciones predeterminadas de Windows para completar la elección.\n\n" + ex.Message, "BrowserSwitch"); }
+                }
+            };
             Controls.Add(defaults);
             Button manage = new Button { Text = "Navegadores…", Location = new Point(444, 412), Size = new Size(192, 38) };
             manage.Click += delegate

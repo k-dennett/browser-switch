@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Xml.Serialization;
+using BrowserSwitch;
 using BrowserSwitch.Core;
 using BrowserSwitch.Windows;
 using Microsoft.Win32;
@@ -33,6 +34,38 @@ internal static class Tests
             using (StreamWriter writer = new StreamWriter(args[1])) new XmlSerializer(typeof(string[])).Serialize(writer, args.Skip(2).ToArray());
             return 0;
         }
+        if (args.Length == 3 && args[0] == "--resident-test")
+        {
+            ResidentSession session = new ResidentSession(args[1]);
+            using (System.Threading.Timer guard = new System.Threading.Timer(delegate { Environment.Exit(5); }, null, 45000, System.Threading.Timeout.Infinite))
+            {
+                if (args[2] == "legacy")
+                {
+                    using (System.Threading.EventWaitHandle ready = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.ManualReset, session.Name("Ready")))
+                    { ready.Set(); System.Threading.Thread.Sleep(40000); }
+                }
+                else
+                {
+                    if (args[2] == "modal")
+                    {
+                        EventHandler show = null;
+                        show = delegate {
+                            Application.Idle -= show;
+                            using (Form editor = new Form { Text = "BrowserSwitch test editor" })
+                            using (System.Threading.EventWaitHandle shown = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.ManualReset, session.Name("EditorReady")))
+                            using (System.Threading.EventWaitHandle closed = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.ManualReset, session.Name("EditorClosed")))
+                            {
+                                editor.Shown += delegate { shown.Set(); };
+                                editor.ShowDialog(); closed.Set();
+                            }
+                        };
+                        Application.Idle += show;
+                    }
+                    TrayApplicationContext.Run(false, false, session);
+                }
+            }
+            return 0;
+        }
         string temp = Path.Combine(Path.GetTempPath(), "BrowserSwitch tests " + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
         try
@@ -45,11 +78,141 @@ internal static class Tests
             TestDiscoveryAndMerge();
             TestProcess(temp);
             TestRegistryDiscovery();
+            TestInstallationFiles(temp);
+            TestRegistrationRecovery();
+            TestResidentLifecycle(temp);
             Console.WriteLine("PASS: " + assertions + " assertions, including a real child-process argv round trip and HKCU registry discovery.");
             return 0;
         }
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
         finally { Directory.Delete(temp, true); }
+    }
+    static void TestInstallationFiles(string temp)
+    {
+        string target = Path.Combine(temp, "installed.exe"), config = target + ".config", settings = Path.Combine(temp, "personal.xml");
+        string source = Path.Combine(temp, "new.exe"), newConfig = source + ".config", icon = Path.Combine(temp, "new.ico");
+        File.WriteAllText(target, "old binary"); File.WriteAllText(config, "old config"); File.WriteAllText(settings, "keep personal data");
+        File.WriteAllText(source, "new binary"); File.WriteAllText(newConfig, "new config");
+        using (InstallationFiles files = new InstallationFiles(Path.Combine(temp, "recovery")))
+        {
+            files.Protect(target, true); files.Protect(config, true);
+            files.Replace(source, target); files.Replace(newConfig, config); files.Replace(source, icon);
+            // Simulate failure after files were updated, before the installation could commit.
+            files.Rollback(); files.CompleteRecovery();
+        }
+        Assert(File.ReadAllText(target) == "old binary" && File.ReadAllText(config) == "old config", "Failed update restores binary and matching runtime config.");
+        Assert(!File.Exists(icon), "Rollback removes a new installation file that did not previously exist.");
+        Assert(File.ReadAllText(settings) == "keep personal data", "Rollback leaves personal preferences unchanged.");
+        bool failed = false;
+        using (InstallationFiles files = new InstallationFiles(Path.Combine(temp, "locked recovery")))
+        {
+            files.Protect(target, true); files.Protect(config, true);
+            files.Replace(source, target);
+            using (FileStream locked = new FileStream(config, FileMode.Open, FileAccess.Read, FileShare.None))
+                try { files.Replace(newConfig, config); } catch (IOException) { failed = true; }
+            files.Rollback(); files.CompleteRecovery();
+        }
+        Assert(failed && File.ReadAllText(target) == "old binary" && File.ReadAllText(config) == "old config", "A locked destination during a partial update restores the previous complete pair.");
+        File.WriteAllText(target + ".previous", "older binary"); File.WriteAllText(config + ".previous", "older config");
+        failed = false;
+        using (InstallationFiles files = new InstallationFiles(Path.Combine(temp, "commit failure")))
+        {
+            files.Protect(target, true); files.Protect(config, true);
+            files.Replace(source, target); files.Replace(newConfig, config);
+            using (FileStream locked = new FileStream(config + ".previous", FileMode.Open, FileAccess.Read, FileShare.None))
+                try { files.Commit(); } catch (IOException) { failed = true; }
+            files.Rollback(); files.CompleteRecovery();
+        }
+        Assert(failed && File.ReadAllText(target) == "old binary" && File.ReadAllText(config) == "old config", "A commit failure restores the running version's files.");
+        Assert(File.ReadAllText(target + ".previous") == "older binary" && File.ReadAllText(config + ".previous") == "older config", "A commit failure also preserves the previous backup pair.");
+        using (InstallationFiles files = new InstallationFiles(Path.Combine(temp, "committed")))
+        {
+            files.Protect(target, true); files.Protect(config, true);
+            files.Replace(source, target); files.Replace(newConfig, config); files.Commit();
+        }
+        Assert(File.ReadAllText(target) == "new binary" && File.ReadAllText(config) == "new config", "Successful update retains the complete new version.");
+        Assert(File.ReadAllText(target + ".previous") == "old binary" && File.ReadAllText(config + ".previous") == "old config", "Successful update retains matching previous-version backups.");
+        Assert(File.ReadAllText(settings) == "keep personal data", "Successful update preserves personal settings.");
+        string fresh = Path.Combine(temp, "fresh.exe");
+        using (InstallationFiles files = new InstallationFiles(Path.Combine(temp, "fresh recovery")))
+        { files.Replace(source, fresh); files.Rollback(); files.CompleteRecovery(); }
+        Assert(!File.Exists(fresh), "Failed first installation leaves no half-installed executable.");
+    }
+    static void TestRegistrationRecovery()
+    {
+        string id = "BrowserSwitch.UpdateTest." + Guid.NewGuid().ToString("N"), product = id + ".Product", other = id + ".Other";
+        string classes = @"Software\Classes\" + id, client = @"Software\Clients\StartMenuInternet\" + id, caps = client + @"\Capabilities";
+        string apps = @"Software\RegisteredApplications";
+        try
+        {
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(classes)) { key.SetValue("number", 42, RegistryValueKind.DWord); key.SetValue("expand", "%TEMP%", RegistryValueKind.ExpandString); }
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(client + @"\Empty")) { }
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(apps)) { key.SetValue(product, caps); key.SetValue(other, "unrelated"); }
+            RegistrationBackup backup = new RegistrationBackup(id, product);
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(classes)) key.SetValue("number", "changed");
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(classes + @"\New")) { }
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(apps)) { key.DeleteValue(product); key.SetValue(id + ".Alias", caps); }
+            backup.Restore();
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(classes))
+            {
+                Assert((int)key.GetValue("number") == 42 && key.GetValueKind("number") == RegistryValueKind.DWord, "Registration rollback preserves native value types.");
+                Assert((string)key.GetValue("expand", null, RegistryValueOptions.DoNotExpandEnvironmentNames) == "%TEMP%", "Registration rollback preserves unexpanded data.");
+            }
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(client + @"\Empty")) Assert(key != null, "Registration rollback preserves empty subkeys.");
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(classes + @"\New")) Assert(key == null, "Registration rollback removes newly created own subkeys.");
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(apps))
+            {
+                Assert((string)key.GetValue(product) == caps && key.GetValue(id + ".Alias") == null, "Registration rollback restores aliases without leaving new aliases.");
+                Assert((string)key.GetValue(other) == "unrelated", "Registration rollback does not alter another application.");
+            }
+        }
+        finally
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(classes, false); Registry.CurrentUser.DeleteSubKeyTree(client, false);
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(apps, true))
+                if (key != null) foreach (string name in new string[] { product, other, id + ".Alias" }) key.DeleteValue(name, false);
+        }
+    }
+    static void TestResidentLifecycle(string temp)
+    {
+        string identity = "test-" + Guid.NewGuid().ToString("N"), exe = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        ResidentSession session = new ResidentSession(identity);
+        try
+        {
+            Assert(!session.Stop(exe), "Stopping an absent resident succeeds without affecting the real user resident.");
+            for (int i = 0; i < 2; i++)
+            {
+                session.Start(exe, "--resident-test", identity, "normal");
+                using (Process duplicate = Process.Start(new ProcessStartInfo(exe, CommandLine.Join(new string[] { "--resident-test", identity, "normal" })) { UseShellExecute = false }))
+                { Assert(duplicate.WaitForExit(10000) && duplicate.ExitCode == 0, "A second resident reuses the existing instance."); }
+                Assert(session.Stop(exe), "The real tray host acknowledges graceful shutdown for an update.");
+            }
+            using (System.Threading.EventWaitHandle ready = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.ManualReset, session.Name("Ready")))
+            {
+                ready.Reset();
+                using (Process legacy = Process.Start(new ProcessStartInfo(exe, CommandLine.Join(new string[] { "--resident-test", identity, "legacy" })) { UseShellExecute = false }))
+                {
+                    Assert(ready.WaitOne(10000), "Legacy fixture is running before upgrade.");
+                    Assert(session.Stop(exe) && legacy.WaitForExit(10000), "An idle verified legacy host can be replaced without manual tray exit.");
+                }
+            }
+            bool failed = false;
+            using (System.Threading.EventWaitHandle editorReady = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.ManualReset, session.Name("EditorReady")))
+            using (System.Threading.EventWaitHandle editorClosed = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.ManualReset, session.Name("EditorClosed")))
+            {
+                session.Start(exe, "--resident-test", identity, "modal");
+                Assert(editorReady.WaitOne(10000), "An editor is visible before the shutdown safety check.");
+                bool refused = false;
+                try { session.Stop(exe); } catch (IOException) { refused = true; }
+                Assert(refused, "An update does not force an active modal editor to discard its draft.");
+                Process child = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(exe)).First(delegate(Process p) { return p.Id != Process.GetCurrentProcess().Id && p.MainModule.FileName == exe; });
+                using (child) Assert(!child.HasExited && child.CloseMainWindow(), "Editor host remains alive and can close its editor normally.");
+                Assert(editorClosed.WaitOne(10000) && session.Stop(exe), "Update shutdown succeeds after the editor is closed.");
+            }
+            try { session.Start(exe, "--capture", Path.Combine(temp, "failed startup.xml")); } catch (IOException) { failed = true; }
+            Assert(failed, "An executable exiting before tray readiness must fail installation startup validation.");
+        }
+        finally { session.Stop(exe); }
     }
     [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
     static extern int GetWindowLong(IntPtr handle, int index);

@@ -14,7 +14,7 @@ Cada ejecución usa una máquina de GitHub con Windows Server 2022 y .NET Framew
 
 El flujo ejecuta el mismo `scripts/Package.ps1` que se usa localmente. Ese script exige un checkout limpio e identifica el commit exacto; llama a Test.ps1, que compila el programa y ejecuta las pruebas.
 
-La batería actual tiene **299 comprobaciones**: argumentos recibidos por un proceso real, validación de enlaces, preferencias, detección con entradas temporales HKCU y recursos/estilos nativos de Windows. Las entradas temporales del registro se limpian al terminar.
+La batería actual tiene **327 comprobaciones**: argumentos recibidos por un proceso real, validación de enlaces, preferencias, detección con entradas temporales HKCU y recursos/estilos nativos de Windows, recuperación de archivos y registro, arranque/cierre real de la bandeja e impedimento del cierre cuando hay un editor modal. Las entradas temporales del registro se limpian al terminar.
 
 El empaquetador genera el ZIP, lo extrae en una ruta con espacios, compara todos los archivos y hashes, revisa la versión y ejecuta `--diagnostics` desde el binario extraído. Cualquier fallo detiene el trabajo y evita subir el paquete.
 

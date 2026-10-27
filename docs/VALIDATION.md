@@ -84,3 +84,13 @@ Se publicó [BrowserSwitch v1.0.0 para Windows](https://github.com/k-dennett/bro
 - Se verificó que v1.0.0 está publicada y es la release más reciente. Los enlaces finales de descarga utilizan la etiqueta v1.0.0.
 
 Esta comprobación no realizó una instalación limpia en otro Windows ni repitió el recorrido gráfico de instalación sobre el equipo actual. Siguen pendientes las pruebas de otros equipos, inicio tras reiniciar sesión y desinstalación completa. El ejecutable todavía no tiene firma digital.
+## Instalación y actualización automáticas v1.1.0 — 27 de octubre de 2026
+
+- **327 comprobaciones automatizadas aprobadas**: se añadieron recuperación tras una sustitución parcial, destino bloqueado y fallo de confirmación final (incluidos los respaldos `.previous`); restauración de tipos, subclaves y alias del registro propio; arranque real de la bandeja, instancia única, cierre coordinado, compatibilidad con residente antiguo inactivo y rechazo del cierre mientras hay un editor modal.
+- Actualización gráfica real mediante **Actualizar BrowserSwitch**, con el residente v1.0 todavía funcionando: quedó un único proceso desde la ubicación local, arrancado automáticamente. La ventana del paquete desapareció sin abrir manualmente el acceso directo.
+- Se repitió la actualización sobre el nuevo residente: salió el proceso previo, apareció uno nuevo local y se volvió a cerrar la ventana del paquete. No se obtuvo un código de salida fiable del monitor del proceso ajeno; el cierre coordinado con código cero se verifica por separado en las pruebas con procesos hijos.
+- Se comparó el `settings.xml` físico mediante WSL antes y después de ambas actualizaciones: su SHA-256 permaneció idéntico y se conservó Microsoft Edge como navegador fijo. El diagnóstico local mantuvo HTTP y HTTPS activos con el mismo ProgID.
+- La primera actualización conservó el ejecutable v1.0 como `.previous`, con el mismo hash registrado antes de iniciar. La actualización siguiente conserva como anterior la versión instalada inmediatamente previa.
+- No se escribió UserChoice, no se cambiaron políticas ni se activó el inicio con Windows. No se instalaron runtimes o SDK ni se solicitó administrador.
+
+Las pruebas de recuperación provocan fallos en archivos y claves HKCU aislados de prueba; no se dañó intencionadamente la instalación del usuario. La instalación limpia en otro Windows, el inicio tras reiniciar sesión y la desinstalación completa siguen pendientes.

@@ -3,22 +3,28 @@
 
 REQUISITOS
 Windows 10/11 con .NET Framework 4.8 ya instalado.
-La aplicación se instala para el usuario actual y no solicita administrador.
-No necesitas Git, Visual Studio, el código fuente ni PowerShell para instalarla.
+Instalación para el usuario actual, sin solicitar administrador.
+No necesitas Git, Visual Studio, código fuente ni PowerShell para instalarla.
 
-INSTALAR
-1. Extrae TODO el ZIP en una carpeta. No ejecutes el programa desde dentro del ZIP.
-2. Abre BrowserSwitch.exe y pulsa "Instalar BrowserSwitch".
-3. En Configuración de Windows elige BrowserSwitch para HTTP y HTTPS.
-   Si ya estaba seleccionado, conserva esas asociaciones.
-4. Abre el acceso directo BrowserSwitch del escritorio o del menú Inicio.
-   Después puedes cerrar la ventana que abriste desde la carpeta extraída.
+INSTALAR O ACTUALIZAR
+1. Extrae TODO el ZIP. No ejecutes el programa desde dentro del ZIP.
+2. Abre BrowserSwitch.exe y pulsa "Instalar BrowserSwitch" o "Actualizar BrowserSwitch".
+3. El programa comprueba el paquete, cierra su residente anterior y prepara la copia
+   local. Conserva las preferencias y arranca la nueva bandeja automáticamente.
+4. La ventana del paquete se cierra al terminar. Si aún falta la asociación, elige
+   BrowserSwitch para HTTP y HTTPS en Configuración de Windows.
 
-La copia que Windows ejecuta queda en:
+No necesitas abrir después el acceso directo: queda disponible para abrir el menú.
+Si hay un editor de navegadores abierto, guarda o cancela su borrador y vuelve a
+actualizar. La versión 1.0 solo se cierra automáticamente sin ventanas visibles.
+La opción "Iniciar con Windows" no se modifica al actualizar.
+
+La copia ejecutada por Windows queda en:
 %LOCALAPPDATA%\BrowserSwitch\BrowserSwitch.exe
+Las preferencias están en %LOCALAPPDATA%\BrowserSwitch\Data\settings.xml.
 
-La carpeta extraída es el paquete de instalación. La aplicación funciona desde
-la copia local estable; no muevas ni registres manualmente el ejecutable del ZIP.
+La carpeta extraída es el paquete de instalación; la aplicación funciona desde
+la copia local estable. No muevas ni registres manualmente el ejecutable del ZIP.
 
 USAR
 - Pulsa el icono azul de dos flechas en la bandeja, junto al reloj.
@@ -33,11 +39,11 @@ TEAMS
 En sus opciones de enlaces, selecciona "Navegador predeterminado" para que
 respete BrowserSwitch. Una preferencia de Teams puede enviar enlaces a Edge.
 
-ACTUALIZAR
-1. En el icono de bandeja usa "Salir de la bandeja" y cierra selectores pendientes.
-2. Extrae el ZIP nuevo y vuelve a abrir BrowserSwitch.exe.
-3. Pulsa "Instalar BrowserSwitch" y abre el acceso directo instalado.
-Tus preferencias se conservan en %LOCALAPPDATA%\BrowserSwitch\Data.
+RECUPERACION
+Si falla una fase posterior al cambio, se intenta recuperar archivos, accesos
+directos y registro propio anteriores y reiniciar el residente previo, si lo había.
+Si no se puede completar la recuperación, el error indica dónde están las copias.
+No se sustituyen tus preferencias ni se fuerzan asociaciones protegidas.
 
 DESINSTALAR
 1. Elige otro navegador en Windows para HTTP, HTTPS, .htm y .html.
@@ -47,18 +53,18 @@ DESINSTALAR
    Para borrar también preferencias y respaldos:
    .\scripts\Uninstall.ps1 -RemovePersonalData
 
-Alternativa manual, desde el Símbolo del sistema si está permitido, con la aplicación cerrada:
+Alternativa manual, desde el Símbolo del sistema si está permitido:
 "%LOCALAPPDATA%\BrowserSwitch\BrowserSwitch.exe" --unregister
-Después elimina los accesos directos propios y la carpeta local de BrowserSwitch.
+Después elimina sus accesos directos y la carpeta local con la aplicación cerrada.
 Si mantienes Data, conservas tus preferencias. No cambies políticas del equipo.
 
 VERIFICAR LA DESCARGA
-El archivo SHA256SUMS.txt publicado junto al ZIP contiene su huella SHA-256.
+SHA256SUMS.txt, publicado junto al ZIP, contiene su huella SHA-256.
 Puedes compararla con Get-FileHash desde PowerShell si está permitido.
 La huella comprueba integridad; el ejecutable todavía no tiene firma digital.
 Windows o las políticas de tu organización pueden restringir su ejecución.
 
-AYUDA Y CÓDIGO
+AYUDA Y CODIGO
 https://github.com/k-dennett/browser-switch
 https://github.com/k-dennett/browser-switch/blob/main/docs/WINDOWS.md
 
