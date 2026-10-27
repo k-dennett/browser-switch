@@ -441,3 +441,6 @@ settings.xml.*
 *.previous
 # Original local tool retained as a migration backup, never deployed from here.
 /SelectorNavegador/
+# Keep release notes; binary release packages stay under ignored artifacts/.
+!/docs/releases/
+!/docs/releases/*.md

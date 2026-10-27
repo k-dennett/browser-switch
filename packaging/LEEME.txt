@@ -1,0 +1,65 @@
+﻿BROWSERSWITCH PARA WINDOWS
+========================
+
+REQUISITOS
+Windows 10/11 con .NET Framework 4.8 ya instalado.
+La aplicación se instala para el usuario actual y no solicita administrador.
+No necesitas Git, Visual Studio, el código fuente ni PowerShell para instalarla.
+
+INSTALAR
+1. Extrae TODO el ZIP en una carpeta. No ejecutes el programa desde dentro del ZIP.
+2. Abre BrowserSwitch.exe y pulsa "Instalar BrowserSwitch".
+3. En Configuración de Windows elige BrowserSwitch para HTTP y HTTPS.
+   Si ya estaba seleccionado, conserva esas asociaciones.
+4. Abre el acceso directo BrowserSwitch del escritorio o del menú Inicio.
+   Después puedes cerrar la ventana que abriste desde la carpeta extraída.
+
+La copia que Windows ejecuta queda en:
+%LOCALAPPDATA%\BrowserSwitch\BrowserSwitch.exe
+
+La carpeta extraída es el paquete de instalación. La aplicación funciona desde
+la copia local estable; no muevas ni registres manualmente el ejecutable del ZIP.
+
+USAR
+- Pulsa el icono azul de dos flechas en la bandeja, junto al reloj.
+- Elige un navegador fijo o "Preguntar siempre".
+- "Abrir ventana..." permite pegar un enlace.
+- "Navegadores..." permite agregar y editar entradas manuales.
+- "Iniciar con Windows" es opcional y viene desactivado.
+- "Salir de la bandeja" cierra el residente. Los enlaces siguen funcionando.
+- Si no ves el icono, revisa la flecha de iconos ocultos de Windows.
+
+TEAMS
+En sus opciones de enlaces, selecciona "Navegador predeterminado" para que
+respete BrowserSwitch. Una preferencia de Teams puede enviar enlaces a Edge.
+
+ACTUALIZAR
+1. En el icono de bandeja usa "Salir de la bandeja" y cierra selectores pendientes.
+2. Extrae el ZIP nuevo y vuelve a abrir BrowserSwitch.exe.
+3. Pulsa "Instalar BrowserSwitch" y abre el acceso directo instalado.
+Tus preferencias se conservan en %LOCALAPPDATA%\BrowserSwitch\Data.
+
+DESINSTALAR
+1. Elige otro navegador en Windows para HTTP, HTTPS, .htm y .html.
+2. Usa "Salir de la bandeja" y cierra ventanas pendientes.
+3. Si tu equipo permite PowerShell, desde la carpeta extraída ejecuta:
+   .\scripts\Uninstall.ps1
+   Para borrar también preferencias y respaldos:
+   .\scripts\Uninstall.ps1 -RemovePersonalData
+
+Alternativa manual, desde el Símbolo del sistema si está permitido, con la aplicación cerrada:
+"%LOCALAPPDATA%\BrowserSwitch\BrowserSwitch.exe" --unregister
+Después elimina los accesos directos propios y la carpeta local de BrowserSwitch.
+Si mantienes Data, conservas tus preferencias. No cambies políticas del equipo.
+
+VERIFICAR LA DESCARGA
+El archivo SHA256SUMS.txt publicado junto al ZIP contiene su huella SHA-256.
+Puedes compararla con Get-FileHash desde PowerShell si está permitido.
+La huella comprueba integridad; el ejecutable todavía no tiene firma digital.
+Windows o las políticas de tu organización pueden restringir su ejecución.
+
+AYUDA Y CÓDIGO
+https://github.com/k-dennett/browser-switch
+https://github.com/k-dennett/browser-switch/blob/main/docs/WINDOWS.md
+
+Este paquete es exclusivamente para Windows. macOS y Linux son futuros.

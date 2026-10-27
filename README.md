@@ -4,6 +4,7 @@
 <h1 align="center">BrowserSwitch</h1>
 <p align="center"><strong>Tus enlaces, tu navegador.</strong><br>Elige dónde abrir cada enlace o cambia de navegador desde la bandeja de Windows.</p>
 <p align="center">
+  <a href="https://github.com/k-dennett/browser-switch/releases/latest"><img src="docs/assets/badge-release.svg" alt="Descargar BrowserSwitch v1.0.0 para Windows"></a>
   <img src="docs/assets/badge-windows.svg" alt="Windows 10 y 11">
   <img src="docs/assets/badge-dotnet.svg" alt=".NET Framework 4.8">
   <img src="docs/assets/badge-user.svg" alt="Instalación sin administrador">
@@ -44,11 +45,32 @@ La lista se adapta a los navegadores detectados en tu equipo. Puedes agregar otr
 
 ## 🚀 Empezar
 
-**Requisitos:** Windows 10/11 con **.NET Framework 4.8** instalado y una consola PowerShell para Windows permitida en tu equipo. No hace falta Visual Studio, un SDK moderno ni paquetes NuGet.
+**[⬇ Descargar BrowserSwitch para Windows](https://github.com/k-dennett/browser-switch/releases/latest)** · [Notas de v1.0.0](docs/releases/v1.0.0.md)
 
-### 1 · Compilar y preparar
+**Requisitos:** Windows 10/11 con **.NET Framework 4.8** disponible. La instalación gráfica del ZIP no necesita Git, el repositorio ni PowerShell. El repositorio es privado: debes tener acceso para descargar la release.
 
-Desde la raíz del repositorio, en una consola normal de Windows:
+### 1 · Descargar y extraer
+
+En **Assets** de la release elige **BrowserSwitch-1.0.0-windows.zip** y extrae **todo** su contenido. Los archivos llamados *Source code* contienen el código, no el paquete compilado.
+
+### 2 · Instalar para tu usuario
+
+Abre `BrowserSwitch.exe` desde la carpeta extraída y pulsa **Instalar BrowserSwitch**. La aplicación prepara la copia local y abre Aplicaciones predeterminadas. Si estás actualizando, primero usa **Salir de la bandeja** y cierra los selectores pendientes.
+
+En **Configuración → Aplicaciones → Aplicaciones predeterminadas → BrowserSwitch**, asigna **HTTP** y **HTTPS**. Puedes asignar también `.htm` y `.html`.
+
+### 3 · Usar el acceso directo
+
+Abre **BrowserSwitch** desde el escritorio o el menú Inicio. El icono azul queda disponible en la bandeja para cambiar rápidamente. Puedes cerrar la ventana que abriste desde la carpeta extraída.
+
+BrowserSwitch conserva el identificador técnico `SelectorNavegadorPersonal` para mantener asociaciones existentes. La selección se hace con la interfaz normal de Windows; el programa no fuerza `UserChoice` ni sus hashes.
+
+> El paquete incluye `LEEME.txt`, información de versión y scripts opcionales de desinstalación. Compara la descarga con `SHA256SUMS.txt` si quieres comprobar su integridad. El ejecutable todavía no está firmado digitalmente; las políticas del equipo siguen aplicándose.
+
+<details>
+<summary><strong>Compilar e instalar desde el código fuente</strong></summary>
+
+Desde la raíz del repositorio, en una consola PowerShell normal para Windows permitida en tu equipo:
 
 ```powershell
 .\scripts\Build.ps1
@@ -56,19 +78,9 @@ Desde la raíz del repositorio, en una consola normal de Windows:
 .\scripts\Install.ps1 -OpenSettings
 ```
 
-**Alternativa gráfica:** después de compilar, abre `artifacts\windows\BrowserSwitch.exe` desde el Explorador y pulsa **Instalar BrowserSwitch**.
+El repositorio puede estar en WSL; el programa de Windows se instala en una carpeta local. Si la consola está empaquetada o PowerShell está bloqueado, consulta la [guía de Windows](docs/WINDOWS.md). No se cambian políticas del equipo.
 
-> El repositorio puede estar en WSL; el programa que ejecuta Windows debe quedar en una carpeta local. Si tu consola está empaquetada o PowerShell está bloqueado por la organización, consulta la [guía de rutas e instalación](docs/WINDOWS.md#rutas-código-y-programa-instalado). No se cambian políticas del equipo.
-
-### 2 · Elegirlo en Windows
-
-En **Configuración → Aplicaciones → Aplicaciones predeterminadas → BrowserSwitch**, asigna **HTTP** y **HTTPS**. Puedes asignar también `.htm` y `.html`.
-
-BrowserSwitch conserva el identificador técnico `SelectorNavegadorPersonal` para mantener asociaciones existentes. La selección se hace con la interfaz normal de Windows; el programa no fuerza `UserChoice` ni sus hashes.
-
-### 3 · Abrir un enlace
-
-Abre un enlace desde otra aplicación. Elige un navegador o marca **Usar esta elección para los próximos enlaces**. El icono azul queda disponible en la bandeja para cambiar rápidamente.
+</details>
 
 ## 🖱 Cómo se usa
 
@@ -115,7 +127,7 @@ El código y la copia instalada están separados. Los binarios generados, acceso
 
 | Actualizar | Desinstalar |
 | --- | --- |
-| Usa **Salir de la bandeja**, actualiza el código y repite `Install.ps1`. Se conservan tus preferencias y el destino local. | Primero elige otro navegador en Windows; después ejecuta `Uninstall.ps1`. Los datos personales se conservan por defecto. |
+| Usa **Salir de la bandeja**, extrae el ZIP nuevo e instala desde él. Se conservan tus preferencias y el destino local. | Primero elige otro navegador en Windows; después ejecuta `Uninstall.ps1`. Los datos personales se conservan por defecto. |
 | [Actualización y recuperación](docs/WINDOWS.md#actualizar) | [Desinstalación y limpieza opcional](docs/WINDOWS.md#desinstalar) |
 
 ## 🧩 Proyecto y plataformas
@@ -123,7 +135,7 @@ El código y la copia instalada están separados. Los binarios generados, acceso
 ```text
 src/BrowserSwitch.Core/    Modelos y validación de enlaces
 src/BrowserSwitch/         WinForms e integración Windows
-scripts/                  Compilación, preparación, pruebas e iconos
+scripts/                  Compilación, empaquetado, publicación, pruebas e iconos
 docs/                     Guías, imágenes y resultados de validación
 tests/                    Pruebas sin dependencias externas
 ```
@@ -141,3 +153,5 @@ La lógica compartible está separada de WinForms y del registro. BrowserSwitch 
 [PNG · 256 px](docs/assets/browserswitch.png) · [ICO · 16 a 256 px](src/BrowserSwitch/Assets/BrowserSwitch.ico) · [Generador del icono](scripts/Generate-Icon.ps1)
 
 El mismo diseño se utiliza en el ejecutable, la bandeja y los accesos directos. Para regenerar los recursos, ejecuta `scripts/Generate-Icon.ps1`.
+
+Para reproducir y publicar paquetes, consulta la [guía de releases](docs/RELEASING.md).

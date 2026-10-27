@@ -6,6 +6,12 @@ Selector de navegador por usuario para Windows. Conserva la herramienta original
 
 Es independiente de Browser Picker. Su código público se consultó como referencia para el registro por usuario; BrowserSwitch no usa sus ejecutables, bibliotecas ni servicios.
 
+## Instalar desde la release descargable
+
+Descarga el ZIP compilado desde [Releases](https://github.com/k-dennett/browser-switch/releases/latest), extrae todo y abre BrowserSwitch.exe. Pulsa **Instalar BrowserSwitch**, selecciona HTTP y HTTPS en Aplicaciones predeterminadas y abre después el acceso directo del escritorio o Inicio. No necesitas el repositorio, Git ni PowerShell para esta instalación gráfica.
+
+Para actualizar, primero usa **Salir de la bandeja**. La carpeta extraída contiene instrucciones y scripts opcionales de desinstalación. No ejecutes el programa directamente desde dentro del ZIP. El binario no está firmado digitalmente y no se modifican restricciones de la organización.
+
 ## Requisitos
 
 - Windows 10/11 con **.NET Framework 4.8** ya instalado. El programa tiene un manifiesto `asInvoker`: no solicita administrador.
