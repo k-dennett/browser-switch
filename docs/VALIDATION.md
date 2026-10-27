@@ -73,3 +73,14 @@ El proyecto y Build.ps1 incorporan ese archivo tanto como icono nativo de Window
 - No se confirmó visualmente el resultado dentro del buscador de Inicio; la búsqueda puede conservar el resultado anterior hasta cerrar y abrir su panel de nuevo. Se verificaron el binario, el recurso y el acceso que Windows utiliza.
 
 Referencia de la actualización dirigida: [notificar al shell un cambio del icono de un acceso directo](https://devblogs.microsoft.com/oldnewthing/20150903-00/?p=91671).
+## Release descargable v1.0.0 — 27 de octubre de 2026
+
+Se publicó [BrowserSwitch v1.0.0 para Windows](https://github.com/k-dennett/browser-switch/releases/tag/v1.0.0), desde el commit `4eb54f75d34f8069712b5fc79d373bd62bfc625a`, con dos archivos: `BrowserSwitch-1.0.0-windows.zip` y `SHA256SUMS.txt`. El repositorio conserva su visibilidad privada.
+
+- Compilación desde el repositorio y **299 comprobaciones aprobadas** antes de generar el paquete.
+- Contenido del ZIP limitado a ejecutable, configuración de runtime, icono, instrucciones, notas, versión, manifiesto y dos scripts opcionales de desinstalación. Sin preferencias, accesos directos ni datos personales.
+- Extracción nueva en una ruta con espacios, comparación exacta del contenido y los hashes, comprobación de FileVersion y ejecución de `--diagnostics` desde ese ejecutable extraído, sin requerir archivos fuente para funcionar.
+- GitHub confirmó ambos archivos, sus tamaños y hashes. Después de publicar se descargó de nuevo el ZIP mediante la API autenticada y su SHA-256 coincidió: `ec2f611cd901a1e11aaceb1c236fc4c5df261b20de06b9e5870459418c2c0170` (64 366 bytes).
+- Se verificó que v1.0.0 está publicada y es la release más reciente. Los enlaces finales de descarga utilizan la etiqueta v1.0.0.
+
+Esta comprobación no realizó una instalación limpia en otro Windows ni repitió el recorrido gráfico de instalación sobre el equipo actual. Siguen pendientes las pruebas de otros equipos, inicio tras reiniciar sesión y desinstalación completa. El ejecutable todavía no tiene firma digital.

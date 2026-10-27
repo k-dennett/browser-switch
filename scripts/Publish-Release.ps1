@@ -86,7 +86,9 @@ try {
     # Everything is prepared and uploaded before the one final publication step.
     $published = Invoke-ReleaseApi -Method Patch -Uri ($base + '/releases/' + $release.id) -Data @{draft=$false;body=$body;make_latest='true'}
     if ($published.draft) { throw 'GitHub mantuvo la release como borrador.' }
-    $zipAsset = @($uploaded | Where-Object {$_.name -eq $receipt.zip})[0]
+    # Publishing changes draft asset URLs; read the final asset metadata.
+    $publishedAssets = @(Invoke-ReleaseApi -Method Get -Uri ($base + '/releases/' + $published.id + '/assets'))
+    $zipAsset = @($publishedAssets | Where-Object {$_.name -eq $receipt.zip})[0]
     $downloadHeaders = $headers.Clone()
     $downloadHeaders.Accept = 'application/octet-stream'
     $downloadPath = Join-Path $output 'download-verification.zip'
