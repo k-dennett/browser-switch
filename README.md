@@ -11,7 +11,7 @@
   <a href="docs/VALIDATION.md"><img src="docs/assets/badge-tests.svg" alt="327 comprobaciones locales aprobadas"></a>
 </p>
 <p align="center">
-  <a href="#-empezar">Empezar</a> · <a href="#-cómo-se-usa">Uso</a> · <a href="docs/WINDOWS.md">Guía de Windows</a> · <a href="docs/LINUX.md">Prototipo Ubuntu</a> · <a href="docs/VALIDATION.md">Validación</a> · <a href="src/BrowserSwitch/Assets/BrowserSwitch.ico">Icono ICO</a>
+  <a href="#-empezar">Empezar</a> · <a href="#-cómo-se-usa">Uso</a> · <a href="docs/WINDOWS.md">Guía de Windows</a> · <a href="docs/LINUX.md">Prototipo Ubuntu</a> · <a href="macos/README.md">Prototipo macOS</a> · <a href="docs/VALIDATION.md">Validación</a> · <a href="src/BrowserSwitch/Assets/BrowserSwitch.ico">Icono ICO</a>
 </p>
 
 ---
@@ -138,13 +138,14 @@ El código y la copia instalada están separados. Los binarios generados, acceso
 src/BrowserSwitch.Core/    Modelos y validación de enlaces
 src/BrowserSwitch/         WinForms e integración Windows
 src/BrowserSwitch.Linux/   Prototipo GTK 3 e integración GNU/Linux
+macos/                    Prototipo Swift y AppKit
 scripts/                  Compilación, empaquetado, publicación, pruebas e iconos
 docs/                     Guías, imágenes y resultados de validación
 tests/                    Pruebas sin dependencias externas
 ```
 
 - [x] **Windows:** implementado y validado localmente; [resultados y límites](docs/VALIDATION.md).
-- [ ] **macOS:** futuro, con integración nativa propia.
+- [ ] **macOS** · prototipo local en Swift y AppKit. [Compilación y validación pendiente en un Mac](macos/README.md).
 - [x] **Linux:** prototipo para Ubuntu con GNOME. [Compilación, instalación y pruebas](docs/LINUX.md).
 
 La lógica compartible está separada de WinForms y del registro. BrowserSwitch es independiente de Browser Picker: se consultó su código público como referencia para el registro por usuario, sin depender de sus ejecutables ni bibliotecas.
